@@ -120,10 +120,11 @@ class FakeIdTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
+    /**
+     * @expectedException \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+     */
     public function testInvalidFakeModelReturnsNotFound()
     {
-        $this->expectException('Symfony\Component\HttpKernel\Exception\NotFoundHttpException');
-
         $this->app['config']->set('app.debug', false);
 
         $response = $this->call('get', route('fake', ['fake' => 'foo']));
@@ -134,10 +135,11 @@ class FakeIdTest extends TestCase
         }
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     */
     public function testInvalidFakeModelReturnsProperExceptionWhenDebugOn()
     {
-        $this->expectException('InvalidArgumentException');
-
         $this->app['config']->set('app.debug', true);
 
         $response = $this->call('get', route('fake', ['fake' => 'foo']));

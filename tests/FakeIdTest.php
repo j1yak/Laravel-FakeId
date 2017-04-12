@@ -6,6 +6,7 @@ use Orchestra\Testbench\TestCase;
 use Propaganistas\LaravelFakeId\Facades\FakeId;
 use Propaganistas\LaravelFakeId\Tests\Entities\Fake;
 use Propaganistas\LaravelFakeId\Tests\Entities\Real;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class FakeIdTest extends TestCase
 {
@@ -29,14 +30,14 @@ class FakeIdTest extends TestCase
 
         Route::get('real/{real}', [
             'as' => 'real', function ($real) {
-                return $real->getKey();
+                return 'ID:' . $real->getKey();
             },
             'middleware' => $middlewareBindings,
         ]);
 
         Route::get('fake/{fake}', [
             'as' => 'fake', function ($fake) {
-                return $fake->getKey();
+                return 'ID:' . $fake->getKey();
             },
             'middleware' => $middlewareBindings,
         ]);
@@ -105,7 +106,7 @@ class FakeIdTest extends TestCase
 
         $response = $this->call('get', route('fake', ['fake' => $model]));
 
-        $this->assertContains((string) $model->getKey(), $response->getContent());
+        $this->assertContains((string) 'ID:' . $model->getKey(), $response->getContent());
         $this->assertEquals(200, $response->getStatusCode());
     }
 
@@ -115,29 +116,36 @@ class FakeIdTest extends TestCase
 
         $response = $this->call('get', route('real', ['real' => $model]));
 
-        $this->assertContains((string) $model->getKey(), $response->getContent());
+        $this->assertContains((string) 'ID:' . $model->getKey(), $response->getContent());
         $this->assertEquals(200, $response->getStatusCode());
     }
 
     public function testInvalidFakeModelReturnsNotFound()
     {
+        $this->expectException('Symfony\Component\HttpKernel\Exception\NotFoundHttpException');
+
         $this->app['config']->set('app.debug', false);
 
         $response = $this->call('get', route('fake', ['fake' => 'foo']));
 
-        $this->assertTrue(isset($response->exception));
-        $this->assertEquals('Symfony\Component\HttpKernel\Exception\NotFoundHttpException', get_class($response->exception));
+        if (isset($response->exception)) {
+            // Starting from L5.3 these exceptions are silenced, so let's rethrow them.
+            throw $response->exception;
+        }
     }
 
     public function testInvalidFakeModelReturnsProperExceptionWhenDebugOn()
     {
+        $this->expectException('InvalidArgumentException');
+
         $this->app['config']->set('app.debug', true);
 
-        $response = $this->call('get', route('fake', ['fake' => 'not-number']));
+        $response = $this->call('get', route('fake', ['fake' => 'foo']));
 
-        $this->assertTrue(isset($response->exception));
-        $this->assertEquals('InvalidArgumentException', get_class($response->exception));
-
+        if (isset($response->exception)) {
+            // Starting from L5.3 these exceptions are silenced, so let's rethrow them.
+            throw $response->exception;
+        }
     }
 
 
